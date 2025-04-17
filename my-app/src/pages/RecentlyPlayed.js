@@ -18,12 +18,13 @@ function RecentlyPlayed() {
         Authorization: `Bearer ${token}`,
       },
     })
-    .then(data => {
+      .then(res => res.json()) // 👈 Dette manglet
+      .then(data => {
         if (!data || !data.items) {
           console.error('Ingen data mottatt:', data);
           return;
         }
-      
+    
         const cleaned = data.items.map(item => ({
           name: item.track.name,
           artists: item.track.artists.map(a => a.name).join(', '),
@@ -35,10 +36,13 @@ function RecentlyPlayed() {
             minute: '2-digit',
           }),
         }));
-      
+    
         setRecentTracks(cleaned);
       })
-      ;
+      .catch(error => {
+        console.error('Feil ved henting av nylig spilte sanger:', error);
+      });
+  
   }, [navigate]);
 
   return (
