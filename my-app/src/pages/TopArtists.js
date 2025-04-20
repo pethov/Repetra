@@ -108,7 +108,17 @@ function TopArtists() {
             <li key={artist.id || artist.name} className="track-item">
               <span className="track-index">{index + 1}.</span>
               <div className="track-info">
-                <div className="track-title">{artist.name}</div>
+              <div className="track-title">
+              <button
+                  className="artist-name-button"
+                  onClick={() => navigate(`/artist/${encodeURIComponent(artist.name)}`)}
+                >
+                  {artist.name}
+                </button>
+
+
+              </div>
+
                 <div className="track-artist">
                   {timeRange === 'all_time'
                     ? `Totalt: ${(artist.totalMs / 60000).toFixed(1)} min (${artist.count} ganger)`

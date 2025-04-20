@@ -8,7 +8,7 @@ import TopTracks from './pages/TopTracks';
 import TopArtists from './pages/TopArtists';
 import TopGenres from './pages/TopGenres';
 import RecentlyPlayed from './pages/RecentlyPlayed';
-
+import ArtistInfo from './pages/ArtistInfo';
 
 
 function App() {
@@ -22,6 +22,7 @@ function App() {
         <Route path="/topartists" element={<TopArtists />} />
         <Route path= "/topgenres" element= {<TopGenres/>}/>
         <Route path= "/recentlyplayed" element= {<RecentlyPlayed/>}/>
+        <Route path="/artist/:artistName" element={<ArtistInfo />} />
       </Routes>
     </Router>
   );

@@ -172,3 +172,19 @@ a:hover {
   color: #1DB954;
   border-bottom: 2px solid #1DB954;
 }
+.artist-name-button {
+  background: none;
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.artist-name-button:hover {
+  color: #1db954;
+  border-bottom: 2px solid #1db954;
+}
