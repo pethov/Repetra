@@ -29,7 +29,7 @@ function ArtistInfo() {
 
     const sorted = Object.values(filtered)
       .sort((a, b) => b.totalMs - a.totalMs)
-      .slice(0, 5);
+      .slice(0, 6);
 
     setTopTracks(sorted);
 
@@ -60,13 +60,20 @@ function ArtistInfo() {
       {image && <img src={image} alt={artistName} style={{ width: '200px', borderRadius: '10px' }} />}
       {monthlyListeners !== null && <p>Followers: {monthlyListeners.toLocaleString()}</p>}
 
-      <h3>Dine 5 mest spilte sanger av {artistName}:</h3>
+      <h3>Dine 6 mest spilte sanger av {artistName}:</h3>
       <ul className="track-list">
         {topTracks.map((track, index) => (
           <li key={index} className="track-item">
             <span className="track-index">{index + 1}.</span>
             <div className="track-info">
-              <div className="track-title">{track.name}</div>
+              <div className="track-title">
+              <button
+                    className="artist-name-button"
+                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
+                  >
+                    {track.name}
+                  </button>
+              </div>
               <div className="track-artist">
                 Totalt: {(track.totalMs / 60000).toFixed(1)} min ({track.count} ganger)
               </div>
@@ -74,6 +81,7 @@ function ArtistInfo() {
           </li>
         ))}
       </ul>
+
     </div>
   );
 }

@@ -86,11 +86,33 @@ function TopTracks() {
             <li key={index} className="track-item">
               <span className="track-index">{index + 1}.</span>
               <div className="track-info">
-                <div className="track-title">{track.name}</div>
+                <div className="track-title">
+                  <button
+                    className="artist-name-button"
+                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
+                  >
+                    {track.name}
+                  </button>
+                </div>
                 <div className="track-artist">
                   {Array.isArray(track.artists)
-                    ? track.artists.map(a => a.name).join(', ')
-                    : track.artists}
+                    ? track.artists.map((artist, i) => (
+                        <button
+                          key={i}
+                          className="artist-name-button"
+                          onClick={() => navigate(`/artist/${encodeURIComponent(artist.name)}`)}
+                        >
+                          {artist.name}
+                        </button>
+                      ))
+                    : (
+                        <button
+                          className="artist-name-button"
+                          onClick={() => navigate(`/artist/${encodeURIComponent(track.artists)}`)}
+                        >
+                          {track.artists}
+                        </button>
+                      )}
                 </div>
                 {track.totalMs && (
                   <div className="track-time">

@@ -18,16 +18,16 @@ function RecentlyPlayed() {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(res => res.json()) // 👈 Dette manglet
+      .then(res => res.json())
       .then(data => {
-        if (!data || !data.items) {
+        if (!data?.items) {
           console.error('Ingen data mottatt:', data);
           return;
         }
-    
+
         const cleaned = data.items.map(item => ({
           name: item.track.name,
-          artists: item.track.artists.map(a => a.name).join(', '),
+          artist: item.track.artists[0]?.name || 'Ukjent',
           playedAt: new Date(item.played_at).toLocaleString('no-NO', {
             day: '2-digit',
             month: '2-digit',
@@ -36,13 +36,12 @@ function RecentlyPlayed() {
             minute: '2-digit',
           }),
         }));
-    
+
         setRecentTracks(cleaned);
       })
       .catch(error => {
         console.error('Feil ved henting av nylig spilte sanger:', error);
       });
-  
   }, [navigate]);
 
   return (
@@ -50,13 +49,33 @@ function RecentlyPlayed() {
       <button className="back-button" onClick={() => navigate('/home')}>
         ← Tilbake
       </button>
+
       <h2 className="section-title">Sist avspilte sanger</h2>
+
       <ul className="track-list">
         {recentTracks.map((track, index) => (
           <li key={index} className="track-item">
+            <span className="track-index">{index + 1}.</span>
+
             <div className="track-info">
-              <div className="track-title">{track.name}</div>
-              <div className="track-artist">{track.artists}</div>
+              <div className="track-title">
+              <button
+                    className="artist-name-button"
+                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
+                  >
+                    {track.name}
+                  </button>
+              </div>
+
+              <div className="track-artist">
+              <button
+                    className="artist-name-button"
+                    onClick={() => navigate(`/Artist/${encodeURIComponent(track.artist)}`)}
+                  >
+                    {track.artist}
+                  </button>
+              </div>
+
               <div className="track-time">Spilt: {track.playedAt}</div>
             </div>
           </li>
