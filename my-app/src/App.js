@@ -6,10 +6,11 @@ import Callback from './pages/Callback';
 import Home from './pages/Home';
 import TopTracks from './pages/TopTracks';
 import TopArtists from './pages/TopArtists';
-import TopGenres from './pages/TopGenres';
+import TopAlbums from './pages/TopAlbums';
 import RecentlyPlayed from './pages/RecentlyPlayed';
 import ArtistInfo from './pages/ArtistInfo';
 import SongInfo from './pages/SongInfo';
+import AlbumInfo from './pages/AlbumInfo';
 
 
 function App() {
@@ -21,11 +22,11 @@ function App() {
         <Route path="/callback" element={<Callback />} />
         <Route path="/toptracks" element={<TopTracks />} />
         <Route path="/topartists" element={<TopArtists />} />
-        <Route path= "/topgenres" element= {<TopGenres/>}/>
+        <Route path= "/topalbums" element= {<TopAlbums/>}/>
         <Route path= "/recentlyplayed" element= {<RecentlyPlayed/>}/>
         <Route path="/artist/:artistName" element={<ArtistInfo />} />
-        <Route path="/song/:songName" element={<SongInfo />} />
-
+        <Route path="/song/:songName/:artistName" element={<SongInfo />} />
+        <Route path="/album/:albumName/:artistName" element={<AlbumInfo />} />
       </Routes>
     </Router>
   );
