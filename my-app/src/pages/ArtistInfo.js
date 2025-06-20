@@ -69,7 +69,7 @@ function ArtistInfo() {
               <div className="track-title">
               <button
                     className="artist-name-button"
-                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
+                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}/ ${encodeURIComponent(track.artistName)}`)}
                   >
                     {track.name}
                   </button>

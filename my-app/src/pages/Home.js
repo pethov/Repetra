@@ -60,7 +60,7 @@ function Home() {
           <div className="nav-links">
             <button onClick={() => navigate('/TopTracks')}>Top Tracks</button>
             <button onClick={() => navigate('/TopArtists')}>Top Artists</button>
-            <button onClick={() => navigate('/TopGenres')}>Top Genres</button>
+            <button onClick={() => navigate('/TopAlbums')}>Top Albums</button>
             <button onClick={() => navigate('/RecentlyPlayed')}>Recently Played</button>
           </div>
         </div>
