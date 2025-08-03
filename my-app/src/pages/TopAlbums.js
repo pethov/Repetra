@@ -126,7 +126,7 @@ function TopAlbums() {
               <div className="track-info">
                 <div className="track-title"><button
                     className="artist-name-button"
-                    onClick={() => navigate(`/album/${encodeURIComponent(album.name)}/${encodeURIComponent(album.artist)}`)}
+                    onClick={() => navigate(`/album/${encodeURIComponent(album.name)}`)}
                   >
                     {album.name}
                   </button></div>

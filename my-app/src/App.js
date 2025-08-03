@@ -25,7 +25,7 @@ function App() {
         <Route path= "/topalbums" element= {<TopAlbums/>}/>
         <Route path= "/recentlyplayed" element= {<RecentlyPlayed/>}/>
         <Route path="/artist/:artistName" element={<ArtistInfo />} />
-        <Route path="/song/:songName/:artistName" element={<SongInfo />} />
+        <Route path="/song/:songName/" element={<SongInfo />} />
         <Route path="/album/:albumName/:artistName" element={<AlbumInfo />} />
       </Routes>
     </Router>

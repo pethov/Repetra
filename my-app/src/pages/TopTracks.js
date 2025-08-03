@@ -89,7 +89,7 @@ function TopTracks() {
                 <div className="track-title">
                   <button
                     className="artist-name-button"
-                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}/${encodeURIComponent(track.artists)}`)}
+                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
                   >
                     {track.name}
                   </button>

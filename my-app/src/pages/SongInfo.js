@@ -4,7 +4,7 @@ import allAudioHistory from '../Data/AllTimeAudio';
 import './Home.css';
 
 function SongInfo() {
-  const { songName, artistName } = useParams();
+  const { songName} = useParams();
   const navigate = useNavigate();
   const [info, setInfo] = useState(null);
   const [spotifyData, setSpotifyData] = useState(null);
@@ -12,12 +12,11 @@ function SongInfo() {
   useEffect(() => {
     const token = localStorage.getItem('spotifyToken');
     const decodedSongName = decodeURIComponent(songName).toLowerCase();
-    const decodedArtistName = decodeURIComponent(artistName).toLowerCase();
 
     const filtered = allAudioHistory.filter(item => {
       const title = item.trackName || item.master_metadata_track_name;
-      const artist = item.artistName || item.master_metadata_artist_name;
-      return title?.toLowerCase() === decodedSongName && artist?.toLowerCase() === decodedArtistName;
+      
+      return title?.toLowerCase() === decodedSongName
     });
 
     if (filtered.length === 0) {
@@ -50,7 +49,7 @@ function SongInfo() {
 
     setInfo({
       name: decodeURIComponent(songName),
-      artist: decodeURIComponent(artistName),
+      artist,
       firstListen,
       lastListen,
       totalMs,
@@ -76,7 +75,7 @@ function SongInfo() {
           });
         }
       });
-  }, [songName, artistName]);
+  }, [songName]);
 
   if (!info) return <p>Laster info om sangen...</p>;
 
