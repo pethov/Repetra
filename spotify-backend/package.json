@@ -1,29 +1,22 @@
 {
   "name": "spotify-backend",
   "version": "1.0.0",
-  "description": "Backend for å logge og vise Spotify-lytting over tid",
-  "main": "server.js",
+  "type": "module",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "ingest": "node src/ingest.js",
+    "reindex": "node -e \"import('./src/db.js').then(({default:db})=>{db.prepare('DELETE FROM search_fts').run(); db.prepare('INSERT INTO search_fts(rowid, track_name, artist_name, album_name) SELECT track_id, track_name, artist_name, album_name FROM tracks_view').run(); console.log('Rebuilt FTS'); db.close();})\""
   },
-  "keywords": [
-    "spotify",
-    "backend",
-    "express",
-    "sqlite"
-  ],
-  "author": "Petra Hoveid",
-  "license": "MIT",
   "dependencies": {
-    "axios": "^1.8.4",
+    "better-sqlite3": "^9.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "fast-glob": "^3.3.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.0"
   }
 }
