@@ -16,15 +16,18 @@ CREATE TABLE IF NOT EXISTS albums (
   FOREIGN KEY (artist_id) REFERENCES artists(artist_id)
 );
 
+DROP VIEW IF EXISTS tracks_view;
+DROP TABLE IF EXISTS tracks;
+
 CREATE TABLE IF NOT EXISTS tracks (
-  track_id INTEGER PRIMARY KEY,
-  track_name TEXT NOT NULL,
-  artist_id INTEGER NOT NULL,
-  album_id INTEGER,
+  track_id    INTEGER PRIMARY KEY,
+  track_name  TEXT NOT NULL,
+  artist_id   INTEGER NOT NULL,
+  album_id    INTEGER,          -- kan være NULL
   duration_ms INTEGER,
-  UNIQUE(track_name, artist_id, IFNULL(album_id, -1)),
+  UNIQUE(track_name, artist_id, album_id),
   FOREIGN KEY (artist_id) REFERENCES artists(artist_id),
-  FOREIGN KEY (album_id) REFERENCES albums(album_id)
+  FOREIGN KEY (album_id)  REFERENCES albums(album_id)
 );
 
 CREATE TABLE IF NOT EXISTS plays (
@@ -50,7 +53,6 @@ SELECT
 FROM tracks t
 JOIN artists a ON a.artist_id = t.artist_id
 LEFT JOIN albums al ON al.album_id = t.album_id;
-
 -- FTS5 for lynraskt søk
 CREATE VIRTUAL TABLE IF NOT EXISTS search_fts USING fts5(
   track_name, artist_name, album_name, content=''

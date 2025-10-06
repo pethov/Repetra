@@ -1,140 +1,84 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Home.css';
-import allAudioHistory from '../Data/AllTimeAudio';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Home.css";
+import { getTopArtists } from "../utils/api";
 
 function TopArtists() {
   const [profile, setProfile] = useState(null);
-  const [topArtists, setTopArtists] = useState([]);
-  const [timeRange, setTimeRange] = useState('short_term');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("all_time");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('spotifyToken');
+    const token = localStorage.getItem("spotifyToken");
     if (!token) {
-      navigate('/home');
+      navigate("/");
       return;
     }
-
-    fetch('https://api.spotify.com/v1/me', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    fetch("https://api.spotify.com/v1/me", {
+      headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => res.json())
-      .then(data => setProfile(data));
+      .then((r) => r.json())
+      .then(setProfile)
+      .catch(() => setProfile({ display_name: "You" }));
   }, [navigate]);
 
+  function toRange(tr) {
+    const today = new Date();
+    const to = today.toISOString().slice(0, 10);
+    const d = new Date(today);
+    if (tr === "short_term") { d.setMonth(d.getMonth() - 1); return { from: d.toISOString().slice(0,10), to }; }
+    if (tr === "medium_term") { d.setMonth(d.getMonth() - 6); return { from: d.toISOString().slice(0,10), to }; }
+    if (tr === "long_term") { d.setFullYear(d.getFullYear() - 1); return { from: d.toISOString().slice(0,10), to }; }
+    return {};
+  }
+
   useEffect(() => {
-    if (timeRange === 'all_time') {
-      const artistMap = {};
-
-      allAudioHistory.forEach(item => {
-        const artist = item.artistName || item.master_metadata_album_artist_name;
-        const duration = item.msPlayed || item.ms_played;
-
-        if (artist && duration > 0) {
-          if (!artistMap[artist]) {
-            artistMap[artist] = {
-              name: artist,
-              totalMs: 0,
-              count: 0,
-            };
-          }
-
-          artistMap[artist].totalMs += duration;
-          artistMap[artist].count += 1;
-        }
-      });
-
-      const sorted = Object.values(artistMap)
-        .sort((a, b) => b.totalMs - a.totalMs)
-        .slice(0, 50);
-
-      setTopArtists(sorted);
-      return;
-    }
-
-    const token = localStorage.getItem('spotifyToken');
-    fetch(`https://api.spotify.com/v1/me/top/artists?limit=50&time_range=${timeRange}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => setTopArtists(data.items || []));
+    setLoading(true);
+    const { from, to } = toRange(timeRange);
+    getTopArtists(50, from, to)
+      .then((data) => setItems(data.items || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, [timeRange]);
 
-  if (!profile) return <p>Laster inn...</p>;
+  if (!profile) return <p>Laster inn…</p>;
+  if (loading) return <p>Henter top artists…</p>;
 
   return (
     <div className="home-container">
-      <button className="back-button" onClick={() => navigate('/home')}>
-        ← Tilbake
-      </button>
-
-      <div className="tracks-section">
-        <h2>Dine mest hørte artister</h2>
+      <button className="back-button" onClick={() => navigate("/home")}>← Tilbake</button>
+      <div className="content-section">
+        <h2 className="section-title">Dine mest hørte artister</h2>
 
         <div className="nav-links">
-          <button
-            className={timeRange === 'short_term' ? 'active' : ''}
-            onClick={() => setTimeRange('short_term')}
-          >
-            Sist måned
-          </button>
-          <button
-            className={timeRange === 'medium_term' ? 'active' : ''}
-            onClick={() => setTimeRange('medium_term')}
-          >
-            Siste 6 mnd
-          </button>
-          <button
-            className={timeRange === 'long_term' ? 'active' : ''}
-            onClick={() => setTimeRange('long_term')}
-          >
-            Siste år
-          </button>
-          <button
-            className={timeRange === 'all_time' ? 'active' : ''}
-            onClick={() => setTimeRange('all_time')}
-          >
-            All Time
-          </button>
+          <button className={timeRange==="short_term"?"active":""} onClick={()=>setTimeRange("short_term")}>Sist måned</button>
+          <button className={timeRange==="medium_term"?"active":""} onClick={()=>setTimeRange("medium_term")}>Siste 6 mnd</button>
+          <button className={timeRange==="long_term"?"active":""} onClick={()=>setTimeRange("long_term")}>Siste år</button>
+          <button className={timeRange==="all_time"?"active":""} onClick={()=>setTimeRange("all_time")}>All Time</button>
         </div>
 
-        <ul className="track-list">
-          {topArtists.map((artist, index) => (
-            <li key={artist.id || artist.name} className="track-item">
-              <span className="track-index">{index + 1}.</span>
+        <ol className="track-list">
+          {items.map((a, idx) => (
+            <li key={a.artist_id ?? idx} className="track-item">
+              <span className="track-index">{idx+1}.</span>
               <div className="track-info">
-              <div className="track-title">
-              <button
-                  className="artist-name-button"
-                  onClick={() => navigate(`/artist/${encodeURIComponent(artist.name)}`)}
-                >
-                  {artist.name}
-                </button>
-
-
-              </div>
-
-                <div className="track-artist">
-                  {timeRange === 'all_time'
-                    ? `Totalt: ${(artist.totalMs / 60000).toFixed(1)} min (${artist.count} ganger)`
-                    : `Popularitet: ${artist.popularity}`}
+                <div className="track-title">
+                  <button
+                    className="artist-name-button"
+                    onClick={() => navigate(`/artist/${encodeURIComponent(a.artist)}`)}
+                  >
+                    {a.artist}
+                  </button>
+                </div>
+                <div className="track-time">
+                  Totalt: {Math.round((a.ms_played||0)/60000)} min{a.plays ? ` (${a.plays} ganger)` : ""}
                 </div>
               </div>
-              {timeRange !== 'all_time' && artist.images?.[2]?.url && (
-                <img
-                  src={artist.images[2].url}
-                  alt={artist.name}
-                  className="track-cover"
-                />
-              )}
             </li>
           ))}
-        </ul>
+        </ol>
       </div>
     </div>
   );

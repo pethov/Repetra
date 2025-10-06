@@ -24,12 +24,28 @@ const getAlbumId = db.prepare(`
 const insertTrack = db.prepare(`
   INSERT INTO tracks (track_name, artist_id, album_id, duration_ms)
   VALUES (?, ?, ?, ?)
-  ON CONFLICT(track_name, artist_id, IFNULL(album_id, -1)) DO NOTHING
+  ON CONFLICT(track_name, artist_id, album_id) DO NOTHING
 `);
-const getTrackId = db.prepare(`
-  SELECT track_id FROM tracks
-  WHERE track_name = ? AND artist_id = ? AND IFNULL(album_id, -1) = IFNULL(?, -1)
-`);
+
+
+function getTrackId(track_name, artist_id, album_id) {
+  if (album_id == null) {
+    return db
+      .prepare(
+        `SELECT track_id FROM tracks
+         WHERE track_name = ? AND artist_id = ? AND album_id IS NULL`
+      )
+      .get(track_name, artist_id)?.track_id ?? null;
+  } else {
+    return db
+      .prepare(
+        `SELECT track_id FROM tracks
+         WHERE track_name = ? AND artist_id = ? AND album_id = ?`
+      )
+      .get(track_name, artist_id, album_id)?.track_id ?? null;
+  }
+}
+
 
 const insertPlay = db.prepare(`
   INSERT INTO plays (track_id, played_at, ms_played, platform, conn_country, shuffle, skipped, raw)
@@ -42,31 +58,49 @@ const insertFTS = db.prepare(`
 
 // Enkel normalisering fra Extended Streaming History
 function normalize(entry) {
-  // Feltnavn som ofte finnes i Extended JSON
-  const track = entry.master_metadata_track_name || entry.track_name || null;
+  const track  = entry.master_metadata_track_name || entry.track_name || null;
   const artist = entry.master_metadata_album_artist_name || entry.artist_name || null;
-  const album = entry.master_metadata_album_album_name || entry.album_name || null;
+  const album  = entry.master_metadata_album_album_name || entry.album_name || null;
 
-  // Timestamp: 'ts' i extended, ellers 'endTime' i standard
   const ts = entry.ts || entry.endTime;
   const played_at = ts ? new Date(ts).toISOString() : null;
 
-  const ms_played = typeof entry.ms_played === "number"
-    ? entry.ms_played
-    : (entry.msPlayed ?? null);
+  // ms_played: tall
+  let ms_played = null;
+  if (typeof entry.ms_played === "number") ms_played = entry.ms_played;
+  else if (typeof entry.msPlayed === "number") ms_played = entry.msPlayed;
 
-  const duration_ms = entry.ms_played_from_batch ? null : (entry.track_duration_ms ?? null);
+  // varighet (valgfritt)
+  const duration_ms =
+    typeof entry.track_duration_ms === "number" ? entry.track_duration_ms : null;
 
-const platform = (entry.platform || entry.source) ?? null;
+  // strenger
+  const platform = entry.platform ?? entry.source ?? null;
   const conn_country = entry.conn_country ?? entry.country ?? null;
-  const shuffle = (entry.shuffle || null);
+
+  // shuffle: number|null (IKKE boolean)
+  let shuffle = null;
+  if (entry.shuffle !== undefined && entry.shuffle !== null) {
+    shuffle = entry.shuffle ? 1 : 0;
+  }
+
+  // skipped: number (0/1)
   const skipped = entry.skip_reason ? 1 : 0;
 
   return {
-    track, artist, album, played_at, ms_played, duration_ms,
-    platform, conn_country, shuffle, skipped
+    track,
+    artist,
+    album,
+    played_at,
+    ms_played,
+    duration_ms,
+    platform: platform == null ? null : String(platform),
+    conn_country: conn_country == null ? null : String(conn_country),
+    shuffle,       // number|null
+    skipped        // number
   };
 }
+
 
 function upsertArtist(name) {
   if (!name) return null;
@@ -82,8 +116,8 @@ function upsertAlbum(name, artist_id) {
 
 function upsertTrack(track_name, artist_id, album_id, duration_ms) {
   if (!track_name || !artist_id) return null;
-  insertTrack.run(track_name, artist_id, album_id, duration_ms ?? null);
-  return getTrackId.get(track_name, artist_id, album_id ?? null)?.track_id ?? null;
+  insertTrack.run(track_name, artist_id, album_id ?? null, duration_ms ?? null);
+  return getTrackId(track_name, artist_id, album_id ?? null);
 }
 
 function buildFTS(batch) {
@@ -116,14 +150,14 @@ function buildFTS(batch) {
       if (!track_id) continue;
 
       insertPlay.run(
-        track_id,
-        n.played_at,
-        n.ms_played,
-        n.platform,
-        n.conn_country,
-        n.shuffle,
-        n.skipped,
-        JSON.stringify(e)
+          track_id,
+          n.played_at ? String(n.played_at) : null,
+          Number(n.ms_played),
+          n.platform,          // allerede string|null
+          n.conn_country,      // allerede string|null
+          n.shuffle,           // number|null
+          Number(n.skipped),   // number
+          JSON.stringify(e) 
       );
     }
   });

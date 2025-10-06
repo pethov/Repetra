@@ -1,89 +1,95 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import allAudioHistory from '../Data/AllTimeAudio';
-import './Home.css';
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import "./Home.css";
+import { lookupArtist, getTopTracks } from "../utils/api";
 
-function ArtistInfo() {
+export default function ArtistInfo() {
   const { artistName } = useParams();
   const navigate = useNavigate();
-  const [topTracks, setTopTracks] = useState([]);
-  const [image, setImage] = useState(null);
-  const [monthlyListeners, setMonthlyListeners] = useState(null);
+  const [canonical, setCanonical] = useState(artistName);
+  const [tracks, setTracks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState("all_time");
 
   useEffect(() => {
-    // Finn dine toppsanger for denne artisten
-    const filtered = {};
-    allAudioHistory.forEach(item => {
-      const artist = item.artistName || item.master_metadata_album_artist_name;
-      const title = item.trackName || item.master_metadata_track_name;
-      const duration = item.msPlayed || item.ms_played;
-
-      if (artist && title && duration > 0 && artist === artistName) {
-        if (!filtered[title]) {
-          filtered[title] = { name: title, totalMs: 0, count: 0 };
-        }
-        filtered[title].totalMs += duration;
-        filtered[title].count += 1;
-      }
-    });
-
-    const sorted = Object.values(filtered)
-      .sort((a, b) => b.totalMs - a.totalMs)
-      .slice(0, 6);
-
-    setTopTracks(sorted);
-
-    // Hent artist-data fra Spotify (for bilde og monthly listeners)
-    const token = localStorage.getItem('spotifyToken');
-    fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
-        const artist = data.artists?.items?.[0];
-        if (artist) {
-          setImage(artist.images?.[0]?.url || null);
-          setMonthlyListeners(artist.followers?.total || null); // Spotify gir ikke monthly listeners direkte
-        }
-      });
-
+    (async () => {
+      // Slå opp for å få "riktig" navn (case, mellomrom osv.)
+      const res = await lookupArtist(artistName);
+      const best = res.items?.find(a => a.artist.toLowerCase() === decodeURIComponent(artistName).toLowerCase());
+      setCanonical(best?.artist || decodeURIComponent(artistName));
+    })();
   }, [artistName]);
+
+  function toRange(tr) {
+    const today = new Date();
+    const to = today.toISOString().slice(0, 10);
+    const d = new Date(today);
+    if (tr === "short_term") { d.setMonth(d.getMonth() - 1); return { from: d.toISOString().slice(0,10), to }; }
+    if (tr === "medium_term") { d.setMonth(d.getMonth() - 6); return { from: d.toISOString().slice(0,10), to }; }
+    if (tr === "long_term") { d.setFullYear(d.getFullYear() - 1); return { from: d.toISOString().slice(0,10), to }; }
+    return {};
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    const { from, to } = toRange(timeRange);
+    getTopTracks(200, from, to)
+      .then((data) => setTracks(data.items || []))
+      .finally(() => setLoading(false));
+  }, [timeRange]);
+
+  const filtered = useMemo(
+    () => tracks.filter(t => t.artist?.toLowerCase() === (canonical || "").toLowerCase()),
+    [tracks, canonical]
+  );
+
+  const totalMs = filtered.reduce((s, x) => s + (x.ms_played || 0), 0);
+  const totalPlays = filtered.reduce((s, x) => s + (x.plays || 0), 0);
+
+  if (loading) return <p>Henter artistdata…</p>;
 
   return (
     <div className="home-container">
       <button className="back-button" onClick={() => navigate(-1)}>← Tilbake</button>
 
-      <h2>{artistName}</h2>
+      <div className="content-section">
+        <h2 className="section-title">{canonical}</h2>
 
-      {image && <img src={image} alt={artistName} style={{ width: '200px', borderRadius: '10px' }} />}
-      {monthlyListeners !== null && <p>Followers: {monthlyListeners.toLocaleString()}</p>}
+        <div className="nav-links">
+          <button className={timeRange==="short_term"?"active":""} onClick={()=>setTimeRange("short_term")}>Sist måned</button>
+          <button className={timeRange==="medium_term"?"active":""} onClick={()=>setTimeRange("medium_term")}>Siste 6 mnd</button>
+          <button className={timeRange==="long_term"?"active":""} onClick={()=>setTimeRange("long_term")}>Siste år</button>
+          <button className={timeRange==="all_time"?"active":""} onClick={()=>setTimeRange("all_time")}>All Time</button>
+        </div>
 
-      <h3>Dine 6 mest spilte sanger av {artistName}:</h3>
-      <ul className="track-list">
-        {topTracks.map((track, index) => (
-          <li key={index} className="track-item">
-            <span className="track-index">{index + 1}.</span>
-            <div className="track-info">
-              <div className="track-title">
-              <button
+        <div className="track-time" style={{ marginBottom: 12 }}>
+          Totalt: {Math.round(totalMs/60000)} min{totalPlays ? ` (${totalPlays} ganger)` : ""}
+        </div>
+
+        <ol className="track-list">
+          {filtered.map((t, idx) => (
+            <li key={t.track_id ?? idx} className="track-item">
+              <span className="track-index">{idx+1}.</span>
+              <div className="track-info">
+                <div className="track-title">
+                  <button
                     className="artist-name-button"
-                    onClick={() => navigate(`/song/${encodeURIComponent(track.name)}`)}
+                    onClick={() => navigate(`/song/${encodeURIComponent(t.track)}`)}
                   >
-                    {track.name}
+                    {t.track}
                   </button>
+                </div>
+                <div className="track-artist">
+                  <span>{t.album ? `Album: ${t.album}` : ""}</span>
+                </div>
+                <div className="track-time">
+                  {Math.round((t.ms_played||0)/60000)} min{t.plays ? ` (${t.plays} ganger)` : ""}
+                </div>
               </div>
-              <div className="track-artist">
-                Totalt: {(track.totalMs / 60000).toFixed(1)} min ({track.count} ganger)
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-
+            </li>
+          ))}
+        </ol>
+      </div>
     </div>
   );
 }
-
-export default ArtistInfo;
